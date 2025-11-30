@@ -1,0 +1,492 @@
+---
+title: "Results"
+author: "Frances Van Looveren"
+date: "2025-11-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(scales)
+library(dplyr)
+library(sf)
+```
+
+
+## R0 ##
+
+```{r}
+R0 <- R0 %>%
+  mutate(
+    best_pitch = case_when(
+      fastball_pred >= bb_pred & fastball_pred >= changeup_pred ~ "Fastball",
+      bb_pred >= fastball_pred & bb_pred >= changeup_pred ~ "Breaking Ball",
+      TRUE ~ "Changeup"
+    ),
+    best_pitch = factor(best_pitch,
+                        levels = c("Fastball", "Breaking Ball", "Changeup"))
+  ) %>%
+  mutate(
+    best_pred = case_when(
+      best_pitch == "Fastball" ~ fastball_pred,
+      best_pitch == "Breaking Ball" ~ bb_pred,
+      best_pitch == "Changeup" ~ changeup_pred
+    )
+  ) %>%
+  arrange(desc(best_pred)) %>%
+  mutate(rank = row_number()) %>%
+  mutate(
+    alpha = rescale(max(rank) - rank, to = c(0.25, 1))
+  )
+```
+
+```{r}
+top_R0 <- R0 %>% filter(rank <= 50)
+
+hull_idx_R0 <- chull(top_R0$platelocside, top_R0$platelocheight)
+hull_R0 <- top_R0[hull_idx_R0, ]
+```
+
+``` {r}
+ggplot(R0,
+       aes(x = platelocside,
+           y = platelocheight,
+           fill = best_pitch)) +
+  geom_tile(aes(fill = best_pitch, alpha = alpha),
+            color = "#555555", size = 0.15) +
+  coord_fixed(ratio = 0.6) +
+  geom_segment(
+    aes(x = -0.7083, xend = 0.7083, y = 0, yend = 0),
+    color = "#555555",
+    linewidth = 2
+  ) +
+  geom_polygon(data = hull_R0,
+             aes(x = platelocside, y = platelocheight),
+             color = "white", fill = NA, linewidth = 1.2) +
+  scale_fill_manual(
+    name = "Pitch Type",
+    values = c("Fastball" = "#092C5C",
+               "Breaking Ball" = "#8FBCE6",
+               "Changeup" = "#F5D130")
+  ) +
+  annotate("rect", xmin = -0.75, xmax = 0.75, ymin = 1.5, ymax = 3.5, 
+            fill = NA, linewidth = 1.2, color = "black"
+  ) +
+  labs(
+    x = "Horizontal location (ft)",
+    y = "Vertical location (ft)",
+    title = "  RH"
+  ) +
+  scale_alpha(guide = "none") +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", size = 16),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12)
+  ) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10))
+  )
+```
+
+```{r}
+hull_R0 %>%
+  summarise(
+    min_x = min(platelocside),
+    max_x = max(platelocside),
+    min_y = min(platelocheight),
+    max_y = max(platelocheight),
+    avg_best_pred = mean(best_pred)
+  )
+```
+
+
+
+## L0 ##
+
+```{r}
+L0 <- L0 %>%
+  mutate(
+    best_pitch = case_when(
+      fastball_pred >= bb_pred & fastball_pred >= changeup_pred ~ "Fastball",
+      bb_pred >= fastball_pred & bb_pred >= changeup_pred ~ "Breaking Ball",
+      TRUE ~ "Changeup"
+    ),
+    best_pitch = factor(best_pitch,
+                        levels = c("Fastball", "Breaking Ball", "Changeup"))
+  ) %>%
+  mutate(
+    best_pred = case_when(
+      best_pitch == "Fastball" ~ fastball_pred,
+      best_pitch == "Breaking Ball" ~ bb_pred,
+      best_pitch == "Changeup" ~ changeup_pred
+    )
+  ) %>%
+  arrange(desc(best_pred)) %>%
+  mutate(rank = row_number()) %>%
+  mutate(
+    alpha = rescale(max(rank) - rank, to = c(0.25, 1))
+  )
+```
+
+```{r}
+top_L0 <- L0 %>% filter(rank <= 50)
+
+hull_idx_L0 <- chull(top_L0$platelocside, top_L0$platelocheight)
+hull_L0 <- top_L0[hull_idx_L0, ]
+```
+
+``` {r}
+
+ggplot(L0,
+       aes(x = platelocside,
+           y = platelocheight,
+           fill = best_pitch)) +
+  geom_tile(aes(fill = best_pitch, alpha = alpha),
+            color = "#555555", size = 0.15) +
+  coord_fixed(ratio = 0.6) +
+  geom_segment(
+    aes(x = -0.7083, xend = 0.7083, y = 0, yend = 0),
+    color = "#555555",
+    linewidth = 2
+  ) +
+  geom_polygon(data = hull_L0,
+             aes(x = platelocside, y = platelocheight),
+             color = "white", fill = NA, linewidth = 1.2
+  ) +
+  annotate("rect", xmin = -0.75, xmax = 0.75, ymin = 1.5, ymax = 3.5, 
+            fill = NA, linewidth = 1.2, color = "black"
+  ) +
+  scale_fill_manual(
+    name = "Pitch Type",
+    values = c("Fastball" = "#092C5C",
+               "Breaking Ball" = "#8FBCE6",
+               "Changeup" = "#F5D130")
+  ) +
+  labs(
+    x = "Horizontal location (ft)",
+    y = "Vertical location (ft)",
+    title = "  LH"
+  ) +
+  scale_alpha(guide = "none") +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", size = 16),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12)
+  ) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10))
+  )
+```
+
+```{r}
+hull_L0 %>%
+  summarise(
+    min_x = min(platelocside),
+    max_x = max(platelocside),
+    min_y = min(platelocheight),
+    max_y = max(platelocheight),
+    center_x = mean(platelocside),
+    center_y = mean(platelocheight),
+    avg_best_pred = mean(best_pred)
+  )
+```
+
+
+## R1 ##
+
+```{r}
+R1 <- R1 %>%
+  mutate(
+    best_pitch = case_when(
+      fastball_pred >= bb_pred & fastball_pred >= changeup_pred ~ "Fastball",
+      bb_pred >= fastball_pred & bb_pred >= changeup_pred ~ "Breaking Ball",
+      TRUE ~ "Changeup"
+    ),
+    best_pitch = factor(best_pitch,
+                        levels = c("Fastball", "Breaking Ball", "Changeup"))
+  ) %>%
+  mutate(
+    best_pred = case_when(
+      best_pitch == "Fastball" ~ fastball_pred,
+      best_pitch == "Breaking Ball" ~ bb_pred,
+      best_pitch == "Changeup" ~ changeup_pred
+    )
+  ) %>%
+  arrange(desc(best_pred)) %>%
+  mutate(rank = row_number()) %>%
+  mutate(
+    alpha = rescale(max(rank) - rank, to = c(0.25, 1))
+  )
+```
+
+```{r}
+top_R1 <- R1 %>% filter(rank <= 50)
+
+hull_idx_R1 <- chull(top_R1$platelocside, top_R1$platelocheight)
+hull_R1 <- top_R1[hull_idx_R1, ]
+```
+
+``` {r}
+ggplot(R1,
+       aes(x = platelocside,
+           y = platelocheight,
+           fill = best_pitch)) +
+  geom_tile(aes(fill = best_pitch, alpha = alpha),
+            color = "#555555", size = 0.15) +
+  coord_fixed(ratio = 0.6) +
+  geom_segment(
+    aes(x = -0.7083, xend = 0.7083, y = 0, yend = 0),
+    color = "#555555",
+    linewidth = 2
+  ) +
+  geom_polygon(data = hull_R1,
+             aes(x = platelocside, y = platelocheight),
+             color = "white", fill = NA, linewidth = 1.2
+  ) +
+  annotate("rect", xmin = -0.75, xmax = 0.75, ymin = 1.5, ymax = 3.5, 
+            fill = NA, linewidth = 1.2, color = "black"
+  ) +
+  scale_fill_manual(
+    name = "Pitch Type",
+    values = c("Fastball" = "#092C5C",
+               "Breaking Ball" = "#8FBCE6",
+               "Changeup" = "#F5D130")
+  ) +
+  labs(
+    x = "Horizontal location (ft)",
+    y = "Vertical location (ft)",
+    title = "  RH"
+  ) +
+  scale_alpha(guide = "none") +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", size = 12),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12)
+  ) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10))
+  )
+```
+
+```{r}
+hull_R1 %>%
+  summarise(
+    min_x = min(platelocside),
+    max_x = max(platelocside),
+    min_y = min(platelocheight),
+    max_y = max(platelocheight),
+    center_x = mean(platelocside),
+    center_y = mean(platelocheight),
+    avg_best_pred = mean(best_pred)
+  )
+```
+
+## L1 ##
+
+```{r}
+L1 <- L1 %>%
+  mutate(
+    best_pitch = case_when(
+      fastball_pred >= bb_pred & fastball_pred >= changeup_pred ~ "Fastball",
+      bb_pred >= fastball_pred & bb_pred >= changeup_pred ~ "Breaking Ball",
+      TRUE ~ "Changeup"
+    ),
+    best_pitch = factor(best_pitch,
+                        levels = c("Fastball", "Breaking Ball", "Changeup"))
+  ) %>%
+  mutate(
+    best_pred = case_when(
+      best_pitch == "Fastball" ~ fastball_pred,
+      best_pitch == "Breaking Ball" ~ bb_pred,
+      best_pitch == "Changeup" ~ changeup_pred
+    )
+  ) %>%
+  arrange(desc(best_pred)) %>%
+  mutate(rank = row_number()) %>%
+  mutate(
+    alpha = rescale(max(rank) - rank, to = c(0.25, 1))
+  )
+```
+
+```{r}
+top_L1 <- L1 %>% filter(rank <= 50)
+
+hull_idx_L1 <- chull(top_L1$platelocside, top_L1$platelocheight)
+hull_L1 <- top_L1[hull_idx_L1, ]
+```
+
+``` {r}
+ggplot(L1,
+       aes(x = platelocside,
+           y = platelocheight,
+           fill = best_pitch)) +
+  geom_tile(aes(fill = best_pitch, alpha = alpha),
+            color = "#555555", size = 0.15) +
+  coord_fixed(ratio = 0.6) +
+  geom_segment(
+    aes(x = -0.7083, xend = 0.7083, y = 0, yend = 0),
+    color = "#555555",
+    linewidth = 2
+  ) +
+  geom_polygon(data = hull_L1,
+             aes(x = platelocside, y = platelocheight),
+             color = "white", fill = NA, linewidth = 1.2
+  ) +
+  scale_fill_manual(
+    name = "Pitch Type",
+    values = c("Fastball" = "#092C5C",
+               "Breaking Ball" = "#8FBCE6",
+               "Changeup" = "#F5D130")
+  ) +
+  labs(
+    x = "Horizontal location (ft)",
+    y = "Vertical location (ft)",
+    title = "Best Pitch Type by Location - 2K, LH"
+  ) +
+  scale_alpha(guide = "none") +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", size = 12),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12)
+  ) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10))
+  )
+```
+
+```{r}
+hull_L1 %>%
+  summarise(
+    min_x = min(platelocside),
+    max_x = max(platelocside),
+    min_y = min(platelocheight),
+    max_y = max(platelocheight),
+    center_x = mean(platelocside),
+    center_y = mean(platelocheight),
+    avg_best_pred = mean(best_pred)
+  )
+```
+
+```{r}
+# split hull into two groups
+set.seed(123)
+
+kfit <- kmeans(top_L1[, c("platelocside", "platelocheight")],
+               centers = 2)
+top_L1$cluster <- factor(kfit$cluster)
+hulls_L1 <- top_L1 %>%
+  group_by(cluster) %>%
+  slice(chull(platelocside, platelocheight)) %>%
+  ungroup()
+
+hull1 <- hulls_L1 %>% dplyr::filter(cluster == 1)
+```
+
+``` {r}
+ggplot(L1,
+       aes(x = platelocside,
+           y = platelocheight,
+           fill = best_pitch)) +
+  geom_tile(aes(fill = best_pitch, alpha = alpha),
+            color = "#555555", size = 0.15) +
+  coord_fixed(ratio = 0.6) +
+  geom_segment(
+    aes(x = -0.7083, xend = 0.7083, y = 0, yend = 0),
+    color = "#555555",
+    linewidth = 2
+  ) +
+  geom_polygon(data = hulls_L1,
+             aes(x = platelocside, y = platelocheight, group = cluster),
+             color = "white", fill = NA, linewidth = 1.2
+  ) +
+  annotate("rect", xmin = -0.75, xmax = 0.75, ymin = 1.5, ymax = 3.5, 
+            fill = NA, linewidth = 1.2, color = "black"
+  ) +
+  scale_fill_manual(
+    name = "Pitch Type",
+    values = c("Fastball" = "#092C5C",
+               "Breaking Ball" = "#8FBCE6",
+               "Changeup" = "#F5D130")
+  ) +
+  labs(
+    x = "Horizontal location (ft)",
+    y = "Vertical location (ft)",
+    title = "  LH"
+  ) +
+  scale_alpha(guide = "none") +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", size = 12),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 12)
+  ) +
+  theme(
+    axis.title.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10))
+  )
+```
+
+```{r}
+top_L1 %>%
+  group_by(cluster) %>%
+  summarise(
+    min_x = min(platelocside),
+    max_x = max(platelocside),
+    min_y = min(platelocheight),
+    max_y = max(platelocheight),
+    center_x = mean(platelocside),
+    center_y = mean(platelocheight),
+    avg_best_pred = mean(best_pred)
+  )
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

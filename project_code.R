@@ -26,7 +26,7 @@ pitches_23 <- read_csv("updated_pitches_22.csv")
 pitches_24 <- read_csv("updated_pitches_24.csv")
 
 
-# Clean data
+# Clean data (remove misidentified pitches)
 
 
 
